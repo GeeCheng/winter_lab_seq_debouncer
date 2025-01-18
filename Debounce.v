@@ -15,12 +15,6 @@ module Debounce(
 
   // Combinational logic for state transitions and outputs
   always @(*) begin
-    // Default assignments
-    next_state       = state;
-    next_delay_cnt   = delay_cnt;
-    next_previous_sw = previous_sw;
-    out              = previous_sw;
-
     case (state)
       `TRANSFER: begin
         if (sw != previous_sw) begin
