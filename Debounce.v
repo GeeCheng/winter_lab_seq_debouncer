@@ -11,7 +11,8 @@ module Debounce(
 
   reg       state, next_state;
   reg [1:0] delay_cnt, next_delay_cnt;
-  reg       previous_sw, next_previous_sw;
+  reg       previous_sw;
+  reg       out_next;
 
   // Combinational logic for state transitions and outputs
   always @(*) begin
@@ -19,26 +20,28 @@ module Debounce(
       `TRANSFER: begin
         if (sw != previous_sw) begin
           next_state       = `DELAY;
-          next_delay_cnt   = `DELAY_CNT;
+        end else begin
+          next_state       = `TRANSFER;
         end
-        next_previous_sw = sw;
-        out              = sw;
+        next_delay_cnt   = `DELAY_CNT;
+        out_next         = sw;
       end
 
       `DELAY: begin
         if (delay_cnt == 0) begin
           next_state = `TRANSFER;
+          next_delay_cnt = `DELAY_CNT;
         end else begin
+          next_state = `DELAY;
           next_delay_cnt = delay_cnt - 1;
         end
-        out = previous_sw;
+        out_next = previous_sw;
       end
 
       default: begin
         next_state       = `TRANSFER;
         next_delay_cnt   = `DELAY_CNT;
-        next_previous_sw = 1'b0;
-        out              = 1'b0;
+        out_next         = 1'b0;
       end
     endcase
   end
@@ -53,7 +56,8 @@ module Debounce(
     end else begin
       state       <= next_state;
       delay_cnt   <= next_delay_cnt;
-      previous_sw <= next_previous_sw;
+      previous_sw <= out_next;
+      out         <= out_next;
     end
   end
 
