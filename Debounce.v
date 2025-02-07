@@ -1,63 +1,75 @@
-`define TRANSFER    1'b1
-`define DELAY       1'b0
-`define DELAY_CNT   2'd3  // only for simulation
-
-module Debounce(
-  input  wire clk,
-  input  wire rst_n,
-  input  wire sw,
-  output reg  out
+module Debounce (
+  input  wire clk_i,
+  input  wire rst_ni,
+  input  wire raw_sig_i,
+  output reg  debounce_sig_o
 );
 
-  reg       state, next_state;
-  reg [1:0] delay_cnt, next_delay_cnt;
-  reg       previous_sw;
-  reg       out_next;
+  /////////////////////////////////////
+  // Parameters and Local Parameters //
+  /////////////////////////////////////
+  parameter  TRANSFER   = 1'b1;
+  parameter  DELAY      = 1'b0;
+  localparam DELAY_CNT  = 2'd3;  // Only for simulation
+  localparam END_DELAY  = 2'd0;  // Only for simulation
 
-  // Combinational logic for state transitions and outputs
+  //////////////////////////////////
+  // State and Internal Registers //
+  //////////////////////////////////
+  reg state_q, state_d;
+  reg [1:0] delay_cnt_q, delay_cnt_d;
+  reg       prev_sw_q, prev_sw_d;
+  reg       out_d;
+
+  /////////////////////////
+  // Combinational Logic //
+  /////////////////////////
   always @(*) begin
-    case (state)
-      `TRANSFER: begin
-        if (sw != previous_sw) begin
-          next_state       = `DELAY;
-        end else begin
-          next_state       = `TRANSFER;
-        end
-        next_delay_cnt   = `DELAY_CNT;
-        out_next         = sw;
+    case (state_q)
+      TRANSFER: begin
+        state_d      = (raw_sig_i != prev_sw_q) ? DELAY : TRANSFER;
+        delay_cnt_d  = DELAY_CNT;
+        out_d        = raw_sig_i;
+        prev_sw_d    = raw_sig_i;
       end
 
-      `DELAY: begin
-        if (delay_cnt == 0) begin
-          next_state = `TRANSFER;
-          next_delay_cnt = `DELAY_CNT;
+      DELAY: begin
+        if (delay_cnt_q == END_DELAY) begin
+          state_d      = TRANSFER;
+          delay_cnt_d  = DELAY_CNT;
+          out_d        = raw_sig_i;
+          prev_sw_d    = raw_sig_i;
         end else begin
-          next_state = `DELAY;
-          next_delay_cnt = delay_cnt - 1;
+          state_d      = DELAY;
+          delay_cnt_d  = delay_cnt_q - 1;
+          out_d        = prev_sw_q;
+          prev_sw_d    = prev_sw_q;
         end
-        out_next = previous_sw;
       end
 
       default: begin
-        next_state       = `TRANSFER;
-        next_delay_cnt   = `DELAY_CNT;
-        out_next         = 1'b0;
+        state_d      = TRANSFER;
+        delay_cnt_d  = DELAY_CNT;
+        out_d        = 1'b0;
+        prev_sw_d    = 1'b0;
       end
     endcase
   end
 
-  // Sequential logic for state and registers
-  always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      state       <= `TRANSFER;
-      delay_cnt   <= `DELAY_CNT;
-      previous_sw <= 1'b0;
-      out         <= 1'b0;
+  //////////////////////
+  // Sequential Logic //
+  //////////////////////
+  always @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      state_q     <= TRANSFER;
+      delay_cnt_q <= DELAY_CNT;
+      prev_sw_q   <= 1'b0;
+      debounce_sig_o       <= 1'b0;
     end else begin
-      state       <= next_state;
-      delay_cnt   <= next_delay_cnt;
-      previous_sw <= out_next;
-      out         <= out_next;
+      state_q              <= state_d;
+      delay_cnt_q          <= delay_cnt_d;
+      prev_sw_q            <= prev_sw_d;
+      debounce_sig_o       <= out_d;
     end
   end
 
