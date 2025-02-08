@@ -61,15 +61,15 @@ module Debounce (
   //////////////////////
   always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      state_q     <= TRANSFER;
-      delay_cnt_q <= DELAY_CNT;
-      prev_sw_q   <= 1'b0;
-      debounce_sig_o       <= 1'b0;
+      state_q        <= TRANSFER;
+      delay_cnt_q    <= DELAY_CNT;
+      prev_sw_q      <= 1'b0;
+      debounce_sig_o <= 1'b0;
     end else begin
-      state_q              <= state_d;
-      delay_cnt_q          <= delay_cnt_d;
-      prev_sw_q            <= prev_sw_d;
-      debounce_sig_o       <= out_d;
+      state_q        <= state_d;
+      delay_cnt_q    <= delay_cnt_d;
+      prev_sw_q      <= prev_sw_d;
+      debounce_sig_o <= out_d;
     end
   end
 
